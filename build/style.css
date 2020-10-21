@@ -241,9 +241,8 @@ body {
 
 .object-feature .facts .content {
   display: flex;
-  justify-content: space-between;
-  grid-column: 2;
-  margin: 10px;
+  flex-direction: column;
+  justify-content: space-evenly;
 }
 
 

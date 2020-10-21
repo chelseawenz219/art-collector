@@ -1,59 +1,60 @@
 import React, { useEffect, useState } from 'react';
 
-/**
- * Don't touch these imports!
- */
 import { 
   fetchAllCenturies,
   fetchAllClassifications,
   fetchQueryResults
 } from '../api';
 
-const Search = (props) => {
-  // Make sure to destructure setIsLoading and setSearchResults from the props
+const Search = ({setIsLoading, setSearchResults}) => {
 
+   const [centuryList, setCenturyList] = useState([]);
+   const [classificationList, setClassificationList] = useState([]);
+   const [queryString, setQueryString] = useState('');
+   const [century, setCentury] = useState('any');
+   const [classification, setClassification] = useState('any');
 
-  /**
-   * We are at the Search component, a child of app. This has a form, so we need to use useState for
-   * our controlled inputs:
-   * 
-   * centuryList, setCenturyList (default should be an empty array, [])
-   * classificationList, setClassificationList (default should be an empty array, [])
-   * queryString, setQueryString (default should be an empty string, '')
-   * century, setCentury (default should be the string 'any')
-   * classification, setClassification (default should be the string 'any')
-   */
+  useEffect( () => {
+    const centuriesPromise = fetchAllCenturies()
+    const classificationsPromise = fetchAllClassifications()
 
+    Promise.all([centuriesPromise, classificationsPromise])
+                .then(([centuries, classifications])=>{
+                  console.log("response", centuries, classifications);
+                  setCenturyList(centuries.map(century =>{
+                    return century.name;
+                  }))
+                  setClassificationList(classifications.map(classif =>{
+                    return classif.name;
+                  }));
+                })
+                .catch(console.error)
 
-  /**
-   * Inside of useEffect, use Promise.all([]) with fetchAllCenturies and fetchAllClassifications
-   * 
-   * In the .then() callback pass the returned lists to setCenturyList and setClassificationList
-   * 
-   * Make sure to console.error on caught errors from the API methods.
-   */
-  useEffect(() => {
-
+                console.log("centuries", centuryList);
+                console.log("classifications", classificationList);
   }, []);
 
-  /**
-   * This is a form element, so we need to bind an onSubmit handler to it which:
-   * 
-   * calls event.preventDefault()
-   * calls setIsLoading, set it to true
-   * 
-   * then, in a try/catch/finally block:
-   * 
-   * try to:
-   * - get the results from fetchQueryResults({ century, classification, queryString })
-   * - pass them to setSearchResults
-   * 
-   * catch: error to console.error
-   * 
-   * finally: call setIsLoading, set it to false
-   */
-  return <form id="search" onSubmit={async (event) => {
-    // write code here
+  function onTextChange(event){
+    setQueryString(event.target.value);
+  }
+  function onClassifChange(event){
+    setClassification(event.target.value);
+  }
+  function onCenturyChange(event){
+    setCentury(event.target.value);
+  }
+
+  return ( <form id="search" onSubmit={async (event) => {
+    event.preventDefault();
+    setIsLoading(true);
+    try {
+      const results = await fetchQueryResults({century, classification, queryString});
+      setSearchResults(results);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
   }}>
     <fieldset>
       <label htmlFor="keywords">Query</label>
@@ -61,18 +62,20 @@ const Search = (props) => {
         id="keywords" 
         type="text" 
         placeholder="enter keywords..." 
-        value={/* this should be the query string */} 
-        onChange={/* this should update the value of the query string */}/>
+        value={queryString} 
+        onChange={onTextChange}/>
     </fieldset>
     <fieldset>
       <label htmlFor="select-classification">Classification <span className="classification-count">({ classificationList.length })</span></label>
       <select 
         name="classification"
         id="select-classification"
-        value={/* this should be the classification */} 
-        onChange={/* this should update the value of the classification */}>
+        value={classification} 
+        onChange={onClassifChange}>
         <option value="any">Any</option>
-        {/* map over the classificationList, return an <option /> */}
+        {classificationList.map((cl, index )=>{
+          return <option key={index}>{cl}</option>
+        })}
       </select>
     </fieldset>
     <fieldset>
@@ -80,14 +83,16 @@ const Search = (props) => {
       <select 
         name="century" 
         id="select-century"
-        value={/* this should be the century */} 
-        onChange={/* this should update the value of the century */}>
+        value={century} 
+        onChange={onCenturyChange}>
         <option value="any">Any</option>
-        {/* map over the centuryList, return an <option /> */}
+        {centuryList.map((century, index)=>{
+          return <option value={index}>{century}</option>
+        })}
       </select>
      </fieldset>
     <button>SEARCH</button>
   </form>
-}
+  )}
 
 export default Search;
